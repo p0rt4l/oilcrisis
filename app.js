@@ -7,7 +7,7 @@
 const CONFIG = {
   // EIA API (free, no key required with DEMO_KEY for limited use)
   // For production on oilcrisis.us, register at https://www.eia.gov/opendata/ for a real key
-  EIA_API_KEY: 'DEMO_KEY',
+  EIA_API_KEY: 'BdJIZE2H7FiKlYeJUdn5I0tc2SMuHxirAcl2IdW2',
   EIA_SPR_SERIES: 'WCSSTUS1',
   EIA_API_BASE: 'https://api.eia.gov/v2/petroleum/stoc/wstk/data/',
 
@@ -32,6 +32,41 @@ const CONFIG = {
     tickLabels: '#5a5a5a',
   }
 };
+
+// ---- Caching Helpers ----
+const CACHE_KEYS = {
+  SPR: 'oilcrisis_spr_cache',
+  SPR_TIME: 'oilcrisis_spr_cache_time',
+  PRICE: 'oilcrisis_price_cache',
+  PRICE_TIME: 'oilcrisis_price_cache_time'
+};
+
+function getCachedData(key, expiryMs) {
+  try {
+    const dataStr = localStorage.getItem(key);
+    const timeStr = localStorage.getItem(key + '_time');
+    if (!dataStr || !timeStr) return null;
+
+    const cacheTime = parseInt(timeStr, 10);
+    const age = Date.now() - cacheTime;
+    if (age > expiryMs) {
+      return { expired: true, data: JSON.parse(dataStr) };
+    }
+    return { expired: false, data: JSON.parse(dataStr) };
+  } catch (e) {
+    console.warn('[Cache] Read failed for key:', key, e);
+    return null;
+  }
+}
+
+function setCachedData(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(key + '_time', Date.now().toString());
+  } catch (e) {
+    console.warn('[Cache] Write failed for key:', key, e);
+  }
+}
 
 // ---- Historical SPR Data (EIA-sourced, million barrels) ----
 // This serves as fallback if the API fails, and provides pre-1982 data
@@ -105,17 +140,26 @@ let latestSPRDate = null;
 // 1. BRENT CRUDE OIL PRICE (free proxy via multiple sources)
 // ============================================================
 async function fetchBrentPrice() {
-  const priceEl = document.getElementById('oil-price-value');
-  const changeEl = document.getElementById('oil-price-change');
-  const metaEl = document.getElementById('oil-price-meta');
   const loadingEl = document.getElementById('oil-price-loading');
+
+  // Check cache first (5-minute expiry)
+  const cached = getCachedData(CACHE_KEYS.PRICE, 5 * 60 * 1000);
+  if (cached && !cached.expired) {
+    console.log('[Price] Loaded from active cache:', cached.data);
+    displayOilPrice(cached.data.price, cached.data.change, cached.data.source + ' (Cached)');
+    return;
+  }
+
+  // Set timeout values (shortened to prevent page hanging)
+  const YAHOO_TIMEOUT = 3500;
+  const EIA_TIMEOUT = 4000;
 
   try {
     // Primary: Yahoo Finance Brent Futures (BZ=F) via AllOrigins CORS proxy
     const targetUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1m&range=1d';
     const response = await fetch(
       `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-      { signal: AbortSignal.timeout(8000) }
+      { signal: AbortSignal.timeout(YAHOO_TIMEOUT) }
     );
 
     if (response.ok) {
@@ -125,19 +169,24 @@ async function fetchBrentPrice() {
         const latest = result.meta.regularMarketPrice;
         const prev = result.meta.chartPreviousClose;
         const change = latest - prev;
+        
+        // Update cache
+        const cacheData = { price: latest, change: change, source: 'Yahoo Finance' };
+        setCachedData(CACHE_KEYS.PRICE, cacheData);
+
         displayOilPrice(latest, change, 'Yahoo Finance (Real-time)');
         return;
       }
     }
   } catch (e) {
-    console.warn('Real-time Yahoo Finance fetch failed, trying EIA fallback...', e);
+    console.warn('Real-time Yahoo Finance fetch failed or timed out, trying EIA fallback...', e);
   }
 
   // Fallback: U.S. EIA API (updated daily, slightly lagged)
   try {
     const res = await fetch(
       `https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${CONFIG.EIA_API_KEY}&frequency=daily&data[0]=value&facets[series][]=RBRTE&sort[0][column]=period&sort[0][direction]=desc&length=2`,
-      { signal: AbortSignal.timeout(10000) }
+      { signal: AbortSignal.timeout(EIA_TIMEOUT) }
     );
     if (res.ok) {
       const data = await res.json();
@@ -145,12 +194,24 @@ async function fetchBrentPrice() {
         const latest = parseFloat(data.response.data[0].value);
         const prev = data.response.data.length > 1 ? parseFloat(data.response.data[1].value) : latest;
         const change = latest - prev;
+
+        // Update cache
+        const cacheData = { price: latest, change: change, source: 'U.S. EIA' };
+        setCachedData(CACHE_KEYS.PRICE, cacheData);
+
         displayOilPrice(latest, change, 'U.S. EIA (Daily spot)');
         return;
       }
     }
   } catch (e) {
-    console.error('EIA fallback failed', e);
+    console.error('EIA fallback failed or timed out', e);
+  }
+
+  // Final fallback: check if we have any expired cached data
+  if (cached && cached.data) {
+    console.log('[Price] Fallback to expired cache:', cached.data);
+    displayOilPrice(cached.data.price, cached.data.change, cached.data.source + ' (Stale Cache)');
+    return;
   }
 
   // Final fallback: show that we couldn't load
@@ -191,15 +252,26 @@ function displayOilPrice(price, change, source = 'Yahoo Finance') {
 // 2. EIA API — Fetch Live SPR Data
 // ============================================================
 async function fetchSPRData() {
+  // Check cache first (12-hour expiry)
+  const cached = getCachedData(CACHE_KEYS.SPR, 12 * 60 * 60 * 1000);
+  if (cached && !cached.expired) {
+    console.log('[SPR] Loaded from active cache. Latest date:', cached.data.latestDate);
+    latestSPRLevel = cached.data.latestLevel;
+    latestSPRDate = cached.data.latestDate;
+    return cached.data.sampled;
+  }
+
+  const EIA_TIMEOUT = 7000; // Fast timeout for SPR data to prevent hanging
+
   try {
-    // Fetch weekly SPR data — get last ~2300 records (all available since 1982)
+    // Fetch weekly SPR data — get last ~5000 records
     const url = `${CONFIG.EIA_API_BASE}?api_key=${CONFIG.EIA_API_KEY}`
       + `&frequency=weekly&data[0]=value`
       + `&facets[series][]=${CONFIG.EIA_SPR_SERIES}`
       + `&sort[0][column]=period&sort[0][direction]=asc`
       + `&length=5000`;
 
-    const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    const response = await fetch(url, { signal: AbortSignal.timeout(EIA_TIMEOUT) });
 
     if (!response.ok) throw new Error(`EIA API returned ${response.status}`);
 
@@ -221,7 +293,7 @@ async function fetchSPRData() {
     const preHistory = HISTORICAL_DATA.filter(d => d.date < cutoffDate);
     const fullData = [...preHistory, ...liveData];
 
-    // Sort chronologically to guarantee correct order regardless of EIA API response order
+    // Sort chronologically
     fullData.sort((a, b) => a.date.localeCompare(b.date));
 
     // Update latest values
@@ -234,10 +306,26 @@ async function fetchSPRData() {
     // Downsample for chart performance (keep ~200 points + all points from 2020+)
     const sampled = downsampleData(fullData, 200);
 
+    // Save to cache
+    const cacheData = {
+      sampled: sampled,
+      latestLevel: latestSPRLevel,
+      latestDate: latestSPRDate
+    };
+    setCachedData(CACHE_KEYS.SPR, cacheData);
+
     return sampled;
 
   } catch (error) {
-    console.error('[SPR] EIA API fetch failed, using fallback data:', error);
+    console.error('[SPR] EIA API fetch failed or timed out:', error);
+
+    // Fallback to expired cache if available
+    if (cached && cached.data) {
+      console.log('[SPR] Fallback to expired cache. Latest date:', cached.data.latestDate);
+      latestSPRLevel = cached.data.latestLevel;
+      latestSPRDate = cached.data.latestDate;
+      return cached.data.sampled;
+    }
 
     // Sort fallback just in case
     HISTORICAL_DATA.sort((a, b) => a.date.localeCompare(b.date));
