@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- SEO -->
+  <title>U.S. Oil Crisis</title>
+  <meta name="description" content="Live dashboard tracking the U.S. Strategic Petroleum Reserve crisis. Real-time SPR levels, Brent crude oil pricing, projected drawdown trajectory, and the structural risks threatening America's emergency oil stockpile.">
+  <meta name="keywords" content="SPR, Strategic Petroleum Reserve, oil crisis, Brent crude, salt cavern, oil reserves, energy crisis, US oil">
+  <meta name="author" content="OilCrisis.us">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="OilCrisis.us — U.S. Strategic Petroleum Reserve Dashboard">
+  <meta property="og:description" content="America's emergency oil reserve is draining. Track the crisis in real time.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://oilcrisis.us">
+
+  <!-- Favicon (oil drop emoji as SVG) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛢️</text></svg>">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+
+  <!-- Three.js (3D Cavern Visualization) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+  <div class="page-wrapper">
+
+    <!-- ============================================================
+         INTRODUCTION SECTION
+         ============================================================ -->
+    <section class="intro-section" id="intro">
+      <div class="container">
+        <h1 class="intro-title">U.S. Oil <span class="accent">Crisis</span></h1>
+        <p class="intro-text">
+          A physical supply cutoff is actively draining America’s emergency energy reserves. Following the blockade of the Strait of Hormuz and the depletion of both commercial inventories and the Strategic Petroleum Reserve, the nation faces an unprecedented threat to its energy infrastructure. This real-time dashboard tracks the countdown to critical reserve depletion and the structural risks threatening our underground storage caverns.
+        </p>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ============================================================
+         SECTION 1: HERO — Brent Crude Oil Price Ticker
+         ============================================================ -->
+    <header class="hero" id="hero">
+      <div class="container">
+        <div class="hero-content">
+          <div>
+            <div class="hero-label">
+              <span class="live-dot"></span>
+              BRENT CRUDE OIL · LIVE MARKET DATA
+            </div>
+            <h1 class="hero-title">
+              Brent Crude <span class="accent">Oil</span>
+            </h1>
+            <p class="hero-subtitle">
+              The price of global instability, updated in real time.
+            </p>
+            <div class="oil-price-display">
+              <span class="oil-price-loading" id="oil-price-loading">Fetching live price…</span>
+              <span class="oil-price-currency" style="display:none" id="oil-price-currency">$</span>
+              <span class="oil-price-value" style="display:none" id="oil-price-value">—</span>
+              <span class="oil-price-change" style="display:none" id="oil-price-change"></span>
+            </div>
+            <div class="oil-price-meta" id="oil-price-meta"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============================================================
+         SECTION 2: SPR Level Gauge
+         ============================================================ -->
+    <section class="section gauge-section" id="gauge">
+      <div class="container">
+        <div class="gauge-header">
+          <div class="gauge-section-label">STRATEGIC PETROLEUM RESERVE</div>
+          <h2 class="gauge-title">The Reserve is Draining</h2>
+        </div>
+
+        <div class="gauge-numbers">
+          <span class="gauge-current" id="gauge-current-value" data-target="340">0</span>
+          <span class="gauge-unit">million barrels</span>
+        </div>
+        <div class="gauge-capacity">of <span>714 million</span> barrel total capacity</div>
+
+        <!-- Gauge bar -->
+        <div class="gauge-bar-container">
+          <div class="gauge-bar-track">
+            <div class="gauge-bar-fill" id="gauge-bar-fill"></div>
+          </div>
+          <div class="gauge-ticks">
+            <div class="gauge-tick danger" style="left: 14%;">
+              <div class="gauge-tick-line"></div>
+              <div class="gauge-tick-label">100M COLLAPSE</div>
+            </div>
+            <div class="gauge-tick warning" style="left: 21%;">
+              <div class="gauge-tick-line"></div>
+              <div class="gauge-tick-label">150M LEGAL</div>
+            </div>
+            <div class="gauge-tick caution" style="left: 34%;">
+              <div class="gauge-tick-line"></div>
+              <div class="gauge-tick-label">243M STRATEGIC</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gauge-percentage warning" id="gauge-percentage">— % of capacity</div>
+        <div class="gauge-context" id="gauge-date">
+          Loading live data from U.S. Energy Information Administration…
+        </div>
+        <div class="gauge-context">
+          This is the <strong>lowest level since 1983</strong>. The reserve is actively being drained in response to the Strait of Hormuz crisis. At current drawdown rates, the SPR will breach the strategic minimum within months.
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ============================================================
+         COUNTDOWN TO STRATEGIC MINIMUM
+         ============================================================ -->
+    <section class="section countdown-section reveal" id="countdown">
+      <div class="container">
+        <div class="countdown-label">AT CURRENT DRAWDOWN RATE</div>
+        <div class="countdown-display" id="countdown-value">
+          <span class="countdown-number">—</span>
+        </div>
+        <div class="countdown-date" id="countdown-target-date">
+          Estimated Breach Date: —
+        </div>
+        <div class="countdown-sub" id="countdown-sub">
+          until the SPR reaches the Strategic Minimum
+        </div>
+        <div class="countdown-rate" id="countdown-rate">
+          Calculating from live EIA data…
+        </div>
+
+        <!-- Geopolitical Context: Trump G7 Claim vs Reality -->
+        <div class="countdown-claim-note">
+          <strong>The "4-Week" Timeline & Geopolitics:</strong> At the mid-June 2026 G7 Summit, Donald Trump claimed that global oil reserves would have completely run out in "about four weeks" had a diplomatic MOU not been reached to reopen the Strait of Hormuz. While analysts note the literal four weeks was an exaggeration for political leverage, the underlying data shows a severe physical crisis: at the current acute drawdown speed of <strong>~8.5M barrels per week</strong> (1.2M barrels/day), the U.S. SPR is indeed on track to breach the Strategic Minimum by late August 2026, risking permanent salt cavern collapse.
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ============================================================
+         STRAIT OF HORMUZ STATUS SECTION
+         ============================================================ -->
+    <section class="section chokepoint-status-section" id="chokepoint-status">
+      <div class="container">
+        <div class="status-box">
+          <div class="status-label">GLOBAL ENERGY CHOKEPOINT</div>
+          <h2 class="status-title">Strait of Hormuz Status</h2>
+          
+          <div class="status-badge closed">
+            CLOSED
+          </div>
+          
+          <p class="status-context">
+            Iran has officially declared the <strong>Strait of Hormuz closed to all commercial shipping</strong>. This narrow maritime gateway handles over <strong>20% of global petroleum transit</strong> (~21 million barrels/day). With the Strait blockaded, oil shipments from the Persian Gulf have ceased, cutting off major refineries worldwide and forcing the United States into an active, terminal draw on its Strategic Petroleum Reserve.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ============================================================
+         SECTION 3: Interactive SPR Chart
+         ============================================================ -->
+    <section class="section chart-section" id="chart">
+      <div class="container">
+        <div class="chart-section-label">HISTORICAL DATA · 1977 – PRESENT</div>
+        <h2 class="chart-title">SPR Inventory Over Time</h2>
+        <p class="chart-subtitle">
+          Nearly five decades of America's emergency oil reserve — from filling to peak to freefall. The dotted line shows where we're headed.
+        </p>
+
+        <!-- Timeframe Selector -->
+        <div class="chart-timeframe-selector">
+          <button class="timeframe-btn active" data-range="max">Max</button>
+          <button class="timeframe-btn" data-range="10y">10 Years</button>
+          <button class="timeframe-btn" data-range="5y">5 Years</button>
+          <button class="timeframe-btn" data-range="1y">1 Year</button>
+        </div>
+
+        <div class="chart-wrapper">
+          <canvas id="spr-chart"></canvas>
+        </div>
+
+        <!-- Legend -->
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-line solid"></span>
+            SPR Level (actual)
+          </div>
+          <div class="legend-item">
+            <span class="legend-line dashed-amber"></span>
+            Projected trajectory
+          </div>
+          <div class="legend-item">
+            <span class="legend-line dashed-caution"></span>
+            Strategic minimum (243M)
+          </div>
+          <div class="legend-item">
+            <span class="legend-line solid-orange"></span>
+            Legal floor — EPCA (150M)
+          </div>
+          <div class="legend-item">
+            <span class="legend-line solid-red"></span>
+            Cavern collapse (~100M)
+          </div>
+          <div class="legend-item">
+            <span class="legend-line zone-red"></span>
+            Structural danger zone
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot"></span>
+            Breach Milestones (Projected)
+          </div>
+        </div>
+
+        <div class="chart-data-note" id="chart-data-note">
+          <span class="live-dot"></span>
+          <span>Loading live data from U.S. EIA…</span>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ============================================================
+         3D INTERACTIVE CAVERN VISUALIZATION
+         ============================================================ -->
+    <section class="section cavern-section" id="cavern-visual">
+      <div class="container">
+        <div class="cavern-section-label">INTERACTIVE 3D MODEL</div>
+        <h2 class="cavern-title">Inside a Salt Cavern</h2>
+        <p class="cavern-subtitle">
+          Drag to rotate. This model shows the interior of a single SPR storage cavern — the dark crude oil floating above the heavier brine, sealed inside ancient rock salt thousands of feet underground.
+        </p>
+        <div class="cavern-3d-wrapper">
+          <div class="cavern-3d-container" id="cavern-3d"></div>
+          <div class="cavern-3d-legend">
+            <div class="cavern-legend-item">
+              <span class="cavern-legend-swatch" style="background: #2a1a0a;"></span>
+              Crude Oil (~47.6% of capacity)
+            </div>
+            <div class="cavern-legend-item">
+              <span class="cavern-legend-swatch" style="background: #1e3a5f;"></span>
+              Brine / Saltwater (~52.4%)
+            </div>
+            <div class="cavern-legend-item">
+              <span class="cavern-legend-swatch" style="background: #8b7d6b; opacity: 0.5;"></span>
+              Rock Salt (impermeable wall)
+            </div>
+            <div class="cavern-legend-item">
+              <span class="cavern-legend-swatch" style="background: #555; border-radius: 0;"></span>
+              Steel Pipes (oil out / brine in)
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ============================================================
+         SECTION 4: Educational Content — How the SPR Works
+         ============================================================ -->
+    <section class="section education-section" id="education">
+      <div class="container">
+        <div class="education-label">UNDERSTANDING THE CRISIS</div>
+        <h2 class="education-title">Buried in Salt</h2>
+        <p class="education-subtitle">
+          How America's emergency oil reserve works, why it's failing, and what happens when the caverns collapse. Explained simply.
+        </p>
+
+        <div class="card-grid">
+
+          <!-- Card 1: What is the SPR? -->
+          <div class="info-card reveal">
+            <div class="card-number">01</div>
+            <h3 class="card-title">What is the Strategic Petroleum Reserve?</h3>
+            <div class="card-text">
+              <p>
+                In 1973, Arab oil-producing nations cut off exports to the United States. Gas stations ran dry. The economy buckled. Congress swore it would never happen again.
+              </p>
+              <p>
+                In 1975, they created the <strong>Strategic Petroleum Reserve</strong> — the largest government-owned emergency oil stockpile in the world. It spans <strong>four sites along the Gulf Coast</strong> of Texas and Louisiana, holding oil in approximately <strong>60 massive caverns</strong> carved into ancient underground salt domes.
+              </p>
+              <p>
+                At peak capacity, the SPR held <span class="card-stat amber">726.6 million barrels</span> — enough to replace months of oil imports during a national emergency. Its total design capacity is <strong>714 million barrels</strong>.
+              </p>
+              <p>
+                Today, it holds less than half that. And it's still falling.
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 2: How salt cavern storage works -->
+          <div class="info-card reveal">
+            <div class="card-number">02</div>
+            <h3 class="card-title">How do you store oil inside a mountain of salt?</h3>
+            <div class="card-text">
+              <p>
+                Beneath the Gulf Coast lie enormous <strong>salt domes</strong> — pillars of rock salt pushed up from ancient seabeds over millions of years. Some extend over a mile deep and several miles wide.
+              </p>
+              <p>
+                To create a storage cavern, engineers pump <strong>fresh water</strong> down into the salt. The water dissolves the salt, creating a hollow cavity. The resulting saltwater — called <strong>brine</strong> — is pumped back to the surface, leaving behind a cavern roughly the size of a skyscraper.
+              </p>
+              <p>
+                The surrounding rock salt is <strong>completely impermeable</strong>. No cracks. No seepage. It forms a natural, leak-proof vault — no concrete walls or steel tanks required. The caverns sit <strong>2,000 to 4,000 feet underground</strong>, sealed by the weight of the earth itself.
+              </p>
+              <p>
+                It's one of the most elegant engineering solutions ever devised. It's also slowly destroying itself.
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 3: How withdrawal works -->
+          <div class="info-card reveal">
+            <div class="card-number">03</div>
+            <h3 class="card-title">How do you get the oil back out?</h3>
+            <div class="card-text">
+              <p>
+                The entire mechanism relies on one fact: <strong>oil floats on water</strong>.
+              </p>
+              <p>
+                <span class="highlight-amber">To store oil:</span> pump crude in through pipes at the top of the cavern. The oil displaces the heavier brine, which flows out through pipes at the bottom. The oil naturally rises and fills the cavern from the top down.
+              </p>
+              <p>
+                <span class="highlight-amber">To withdraw oil:</span> reverse the process. Pump brine back in through the bottom. The dense brine acts like a <strong>rising floor</strong>, physically lifting the lighter oil upward and pushing it out through pipes at the top.
+              </p>
+              <p>
+                The brine is stored in large surface ponds nearby and recycled for the next cycle. The cavern is never truly empty — there's always fluid inside maintaining pressure against the surrounding salt.
+              </p>
+              <p>
+                At maximum drawdown rate, the SPR can deliver <strong>4.4 million barrels per day</strong> to the market. That rate drops as inventory falls.
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 4: Commercial Stocks & Oil Executive Warnings -->
+          <div class="info-card reveal">
+            <div class="card-number">04</div>
+            <h3 class="card-title">Commercial "Tank Bottoms" & Executive Warnings</h3>
+            <div class="card-text">
+              <p>
+                The emergency buffer doesn't stop with the government. Private oil companies maintain their own <strong>commercial reserves</strong> for refining and logistics. But as the SPR was aggressively drained, private inventories were also cannibalized to meet immediate demand.
+              </p>
+              <p>
+                At the WTI delivery hub in <strong>Cushing, Oklahoma</strong>, commercial stocks plunged to <span class="card-stat red">~20 million barrels</span> — the absolute operational floor. Below this "tank bottom," the remaining oil is unusable sludge and pipelines lose the physical pressure required to pump crude.
+              </p>
+              <p>
+                Chevron CEO Mike Wirth issued a warning that the energy system's key "shock absorbers" — the SPR, commercial stocks, and tanker capacity — have been completely exhausted.
+              </p>
+              <p>
+                ExxonMobil senior leadership echoed this concern, warning that with global buffers drained to the dregs, any new supply shock could trigger a catastrophic price spike to <span class="highlight-red">$140–$160 per barrel</span>. Draining the SPR has not solved the shortage; it has simply left the world without a safety net.
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 5: Why this is a crisis (the dread card) -->
+          <div class="info-card crisis-card reveal">
+            <div class="card-number">05</div>
+            <h3 class="card-title">Why is this now a crisis?</h3>
+            <div class="card-text">
+              <p>
+                The salt caverns were engineered for approximately <span class="card-stat red">5 complete fill-and-withdraw cycles</span> over a 25-year operational life. The SPR has undergone <span class="highlight-red">far more cycles than that</span> — with dozens of partial drawdowns since the 1990s, each one causing cumulative structural damage.
+              </p>
+              <p>
+                Here's the core problem: every time you pump brine in to push oil out, <strong>the water dissolves a little more salt from the cavern walls</strong>. This is literally the same process that created the caverns in the first place. The walls erode. The shapes distort. Overhangs and bulges form. Structural weak points multiply.
+              </p>
+              <p>
+                Meanwhile, the immense geological pressure of the surrounding earth causes the salt to slowly <strong>"creep" inward</strong>, like a plastic bag slowly collapsing. This natural shrinkage costs the SPR approximately <span class="card-stat amber">~2 million barrels of capacity every year</span> — permanently.
+              </p>
+              <p>
+                Below a critical oil level, two things happen simultaneously:
+              </p>
+              <p>
+                <strong>First</strong>, the remaining oil at the bottom of the caverns becomes contaminated with accumulated brine, sediment, and heavy hydrocarbon residue — <span class="highlight-red">sludge that is effectively unusable as fuel</span>.
+              </p>
+              <p>
+                <strong>Second</strong>, without enough fluid volume to maintain internal pressure (~800 PSI), there is no longer sufficient force pushing outward against the weight of the earth above. The salt creep rate accelerates dramatically.
+              </p>
+
+              <div class="card-callout">
+                <strong>The caverns collapse. And once a salt cavern collapses, it is gone permanently.</strong> You cannot rebuild geology. You cannot re-mine a collapsed dome. The storage capacity is lost forever — along with any oil still trapped inside.
+              </div>
+
+              <p style="margin-top: 1.25rem;">
+                This isn't simply a question of "how much oil is left." It's a question of whether <span class="highlight-red">the container itself will survive</span> long enough to matter.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ============================================================
+             CRISIS INSIGHTS & ACTION PLAN
+             ============================================================ -->
+        <div class="education-extras reveal">
+          
+          <hr class="extra-divider">
+
+          <div class="extra-header">
+            <div class="extra-label">CRISIS FAST FACTS</div>
+            <h3 class="extra-title">Key Takeaways at a Glance</h3>
+          </div>
+
+          <!-- 1. Fast Facts Grid -->
+          <div class="fast-facts-grid">
+            <div class="fact-card">
+              <div class="fact-stat red">1 : 12</div>
+              <div class="fact-title">Depletion Asymmetry</div>
+              <p class="fact-desc">
+                <strong>1 day of crisis drawdown</strong> erases approximately <strong>12 days of maximum refill efforts</strong>. Once the reserve is drained, recovering inventory will take a decade, not months.
+              </p>
+            </div>
+            
+            <div class="fact-card">
+              <div class="fact-stat amber">9 / 5</div>
+              <div class="fact-title">Cavern Wear Cycles</div>
+              <p class="fact-desc">
+                Caverns have been cycled an average of <strong>9 times</strong>, far exceeding their <strong>5-cycle design limit</strong>. Each draw dissolves salt walls, moving them closer to permanent collapse.
+              </p>
+            </div>
+
+            <div class="fact-card">
+              <div class="fact-stat red">$5.80</div>
+              <div class="fact-title">Household Cost Impact</div>
+              <p class="fact-desc">
+                Estimated average <strong>gasoline price per gallon</strong> if SPR levels breach the Legal Minimum Floor (150M barrels), triggered by secondary crude supply spikes and refining strain.
+              </p>
+            </div>
+          </div>
+
+          <hr class="extra-divider">
+
+          <!-- 2. Sweet vs. Sour Split -->
+          <div class="crude-split-section">
+            <div class="extra-label">REFINING LIMITATIONS</div>
+            <h3 class="extra-title">Sweet vs. Sour Crude Breakdown</h3>
+            <p class="section-desc">
+              Not all oil in the SPR is identical. The reserve is split between two distinct types of crude, and their chemical differences create severe bottleneck risks during a supply cutoff.
+            </p>
+
+            <div class="split-bar-wrapper">
+              <div class="split-bar">
+                <div class="split-segment sweet" style="width: 40%;">
+                  <span>Sweet Crude (~40%)</span>
+                </div>
+                <div class="split-segment sour" style="width: 60%;">
+                  <span>Sour Crude (~60%)</span>
+                </div>
+              </div>
+              <div class="split-legend">
+                <div class="split-legend-item">
+                  <span class="legend-swatch sweet"></span>
+                  <div>
+                    <strong>Sweet Crude (~40%):</strong> Low sulfur content. Easy to refine and immediately ready for domestic gasoline and distillate production.
+                  </div>
+                </div>
+                <div class="split-legend-item">
+                  <span class="legend-swatch sour"></span>
+                  <div>
+                    <strong>Sour Crude (~60%):</strong> High sulfur content. Requires specialized, complex refining processes. Most U.S. refineries operate at capacity and cannot absorb sour spikes quickly.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="extra-divider">
+
+          <!-- 3. Action Plan -->
+          <div class="action-plan-section">
+            <div class="extra-label">PREPAREDNESS & ACTION</div>
+            <h3 class="extra-title">How to Prepare & What You Can Do</h3>
+            <p class="section-desc">
+              While the macro crisis is decided by geopolitics and government reserves, individuals can take practical steps to reduce vulnerability and mitigate the impact of energy shocks.
+            </p>
+
+            <div class="action-grid">
+              <div class="action-card">
+                <div class="action-num">01</div>
+                <div class="action-title">Reduce Individual Demand</div>
+                <p class="action-desc">
+                  Maintain vehicle tire pressure (improves fuel economy by up to 3%), clean engine air filters, combine trips, and opt for carpooling or transit where possible. Collective minor demand drops can buffer local supply blockades.
+                </p>
+              </div>
+
+              <div class="action-card">
+                <div class="action-num">02</div>
+                <div class="action-title">Budget for Lagging Inflation</div>
+                <p class="action-desc">
+                  Oil price spikes trigger secondary shipping and food price increases, but with a <strong>4 to 8 week lag</strong>. Anticipate these increases and adjust family grocery and utility budgets proactively before the inflation hits.
+                </p>
+              </div>
+
+              <div class="action-card">
+                <div class="action-num">03</div>
+                <div class="action-title">Optimize Home Efficiency</div>
+                <p class="action-desc">
+                  Heating and cooling accounts for over 50% of residential energy use. Utilize smart thermostats, seal window drafts, and transition to energy-efficient appliances to reduce reliance on the grid during peak fuel costs.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ============================================================
+         SECTION 5: Footer
+         ============================================================ -->
+    <footer class="site-footer" id="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-domain">oilcrisis.us</div>
+          <div class="footer-sources">
+            Data sources:
+            <a href="https://www.eia.gov/petroleum/supply/weekly/" target="_blank" rel="noopener">U.S. Energy Information Administration (EIA)</a> ·
+            <a href="https://www.energy.gov/ceser/strategic-petroleum-reserve" target="_blank" rel="noopener">U.S. Department of Energy (DOE)</a> ·
+            SPR weekly inventory series WCSSTUS1
+          </div>
+          <div class="footer-disclaimer">
+            Projection is a linear extrapolation of the current drawdown rate and does not account for future policy changes, refill operations, or geopolitical developments. Threshold levels are based on engineering estimates and statutory requirements (EPCA). This site is for informational purposes only.
+          </div>
+          <div class="footer-updated">
+            <span class="live-dot"></span>
+            Data refreshed automatically from EIA API on each page load
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- 3D Cavern Visualization -->
+  <script src="cavern.js"></script>
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>
