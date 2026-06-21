@@ -721,8 +721,8 @@ function renderChart(historicalData, projectionData, milestones) {
     }
   });
 
-  // Initialize display range to max by default
-  updateChartTimeframe('max');
+  // Initialize display range to 10 years by default
+  updateChartTimeframe('10y');
 }
 
 // ============================================================
